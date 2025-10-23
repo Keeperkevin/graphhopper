@@ -1,0 +1,5 @@
+# Baseline Mutation Score
+# Score de référence pour les tests de mutation
+# Le workflow GitHub Actions échoue si le score descend en dessous de cette valeur
+# Commencé à 0% pour validation initiale - sera automatiquement mis à jour
+0

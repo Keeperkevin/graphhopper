@@ -9,6 +9,9 @@ jobs:
         java-version: [ 24, 25-ea ]
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Fetch full history to compare mutation scores
+          fetch-depth: 0
       - uses: actions/setup-java@v4
         with:
           java-version: ${{ matrix.java-version }}
@@ -34,6 +37,134 @@ jobs:
           key: ${{ runner.os }}-node-${{ hashFiles('**/pom.xml', '**/package.json') }}
           restore-keys: |
             ${{ runner.os}}-node_modules-
-      - name: Build ${{ matrix.java-version }}
+      - name: Build and Test ${{ matrix.java-version }}
         run: mvn -B clean test
+
+      # ===== MUTATION TESTING WORKFLOW =====
+      - name: Run Mutation Tests (Current)
+        if: matrix.java-version == '24'  # Only run mutation tests on one Java version
+        run: |
+          echo "🧬 Running Pitest mutation analysis..."
+          cd core
+          mvn org.pitest:pitest-maven:mutationCoverage -DwithHistory
+          cd ..
+          
+      - name: Extract Current Mutation Score
+        if: matrix.java-version == '24'
+        run: |
+          echo "📊 Extracting mutation score from Pitest report..."
+          
+          # Find the mutations.xml file in core module
+          MUTATIONS_FILE=$(find ./core -name "mutations.xml" -type f | head -1)
+          
+          if [ -f "$MUTATIONS_FILE" ]; then
+            # Extract mutation score from XML report
+            CURRENT_SCORE=$(grep -o 'mutationScore="[0-9]*"' "$MUTATIONS_FILE" | grep -o '[0-9]*' || echo "0")
+            echo "Current mutation score: $CURRENT_SCORE%"
+            echo "CURRENT_MUTATION_SCORE=$CURRENT_SCORE" >> $GITHUB_ENV
+            
+            # Save score to file for persistence
+            echo "$CURRENT_SCORE" > current_mutation_score.txt
+          else
+            echo "❌ Mutation report not found!"
+            echo "CURRENT_MUTATION_SCORE=0" >> $GITHUB_ENV
+          fi
+
+      - name: Get Baseline Mutation Score
+        if: matrix.java-version == '24'
+        run: |
+          echo "📈 Getting baseline mutation score..."
+          
+          # Try to get score from previous successful run
+          if [ -f "baseline_mutation_score.txt" ]; then
+            BASELINE_SCORE=$(cat baseline_mutation_score.txt)
+            echo "Found baseline score: $BASELINE_SCORE%"
+          else
+            # If no baseline exists, set a minimum acceptable score
+            BASELINE_SCORE=70  # Minimum 70% mutation score required
+            echo "No baseline found, using minimum required score: $BASELINE_SCORE%"
+            echo "$BASELINE_SCORE" > baseline_mutation_score.txt
+          fi
+          
+          echo "BASELINE_MUTATION_SCORE=$BASELINE_SCORE" >> $GITHUB_ENV
+
+      - name: Compare Mutation Scores
+        if: matrix.java-version == '24'
+        run: |
+          echo "⚖️ Comparing mutation scores..."
+          echo "Baseline score: $BASELINE_MUTATION_SCORE%"
+          echo "Current score:  $CURRENT_MUTATION_SCORE%"
+          
+          # Calculate difference
+          SCORE_DIFF=$((CURRENT_MUTATION_SCORE - BASELINE_MUTATION_SCORE))
+          echo "Score difference: $SCORE_DIFF%"
+          
+          if [ $CURRENT_MUTATION_SCORE -lt $BASELINE_MUTATION_SCORE ]; then
+            echo "❌ MUTATION SCORE REGRESSION DETECTED!"
+            echo "   Current score ($CURRENT_MUTATION_SCORE%) is lower than baseline ($BASELINE_MUTATION_SCORE%)"
+            echo "   This indicates that your changes may have introduced code that is not well tested."
+            echo ""
+            echo "🔧 To fix this issue:"
+            echo "   1. Add more comprehensive tests for your new code"
+            echo "   2. Ensure your tests kill the mutants introduced by Pitest"
+            echo "   3. Review the Pitest HTML report for specific recommendations"
+            echo ""
+            exit 1
+          elif [ $CURRENT_MUTATION_SCORE -gt $BASELINE_MUTATION_SCORE ]; then
+            echo "✅ MUTATION SCORE IMPROVED!"
+            echo "   Score increased by $SCORE_DIFF% - excellent work!"
+            # Update baseline for future comparisons
+            echo "$CURRENT_MUTATION_SCORE" > baseline_mutation_score.txt
+          else
+            echo "✅ MUTATION SCORE MAINTAINED"
+            echo "   Score remained at $CURRENT_MUTATION_SCORE% - good!"
+          fi
+
+      - name: Upload Mutation Test Results
+        if: matrix.java-version == '24'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-test-results
+          path: |
+            core/target/pit-reports/
+            current_mutation_score.txt
+            baseline_mutation_score.txt
+          retention-days: 30
+
+      - name: Comment Mutation Score (on PR)
+        if: matrix.java-version == '24' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const currentScore = process.env.CURRENT_MUTATION_SCORE;
+            const baselineScore = process.env.BASELINE_MUTATION_SCORE;
+            const scoreDiff = currentScore - baselineScore;
+            
+            let emoji = scoreDiff > 0 ? '📈' : scoreDiff < 0 ? '📉' : '➡️';
+            let status = scoreDiff > 0 ? 'IMPROVED' : scoreDiff < 0 ? 'REGRESSED' : 'MAINTAINED';
+            
+            const comment = `## ${emoji} Mutation Testing Results
+            
+            | Metric | Value |
+            |--------|--------|
+            | **Current Score** | ${currentScore}% |
+            | **Baseline Score** | ${baselineScore}% |
+            | **Difference** | ${scoreDiff > 0 ? '+' : ''}${scoreDiff}% |
+            | **Status** | ${status} |
+            
+            ${scoreDiff < 0 ? 
+              '⚠️ **Mutation score regression detected!** Please add more comprehensive tests.' : 
+              scoreDiff > 0 ? 
+              '🎉 **Great job!** Mutation score improved.' : 
+              '✅ **Good!** Mutation score maintained.'
+            }
+            
+            📊 [View detailed Pitest report in the workflow artifacts](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
 
