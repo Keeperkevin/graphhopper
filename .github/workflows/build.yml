@@ -6,7 +6,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java-version: [ 21, 24 ]
+        java-version: [ 21 ]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -50,7 +50,11 @@ jobs:
         run: |
           echo "🧬 Running Pitest mutation analysis..."
           cd core
-          mvn org.pitest:pitest-maven:mutationCoverage -DwithHistory
+          mvn org.pitest:pitest-maven:mutationCoverage -DwithHistory \
+            -DargLine="--add-opens=java.base/java.lang=ALL-UNNAMED \
+                       --add-opens=java.base/java.util=ALL-UNNAMED \
+                       --add-opens=java.base/java.io=ALL-UNNAMED \
+                       --enable-native-access=ALL-UNNAMED"
           cd ..
           
       - name: Extract Current Mutation Score

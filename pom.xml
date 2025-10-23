@@ -170,6 +170,13 @@
             <artifactId>junit-jupiter-params</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Java Faker for generating test data -->
+        <dependency>
+            <groupId>net.datafaker</groupId>
+            <artifactId>datafaker</artifactId>
+            <version>2.0.2</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <pluginManagement>
@@ -293,6 +300,59 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            
+            <!-- Pitest (Mutation Testing) Plugin - Circle and DistanceCalcEuclidean only -->
+            <plugin>
+                <groupId>org.pitest</groupId>
+                <artifactId>pitest-maven</artifactId>
+                <version>1.15.8</version>
+                <configuration>
+                    <!-- Target specific classes for mutation testing -->
+                    <!-- Configuration pour tests rapides - seulement classes spécifiques -->
+                    <targetClasses>
+                        <param>com.graphhopper.util.shapes.Circle</param>
+                        <!-- Ajouter d'autres classes une par une selon besoin -->
+                        <!-- <param>com.graphhopper.util.DistanceCalcEuclidean</param> -->
+                        <!-- <param>com.graphhopper.reader.dem.HeightTile</param> -->
+                    </targetClasses>
+                    
+                    <targetTests>
+                        <param>com.graphhopper.util.shapes.CircleTest</param>
+                        <!-- Tests correspondants -->
+                        <!-- <param>com.graphhopper.util.DistanceCalcEuclideanTest</param> -->
+                        <!-- <param>com.graphhopper.reader.dem.HeightTileTest</param> -->
+                    </targetTests>
+                    <!-- Mutation operators to use -->
+                    <mutators>
+                        <mutator>DEFAULTS</mutator>
+                    </mutators>
+                    <!-- Output formats -->
+                    <outputFormats>
+                        <outputFormat>HTML</outputFormat>
+                        <outputFormat>XML</outputFormat>
+                    </outputFormats>
+                    <!-- Number of threads for mutation testing -->
+                    <threads>2</threads>
+                    <!-- Timeout factor (multiple of normal test time) -->
+                    <timeoutFactor>1.25</timeoutFactor>
+                    <!-- Timeout constant (in milliseconds) -->
+                    <timeoutConstant>4000</timeoutConstant>
+                    <!-- Memory limit -->
+                    <jvmArgs>
+                        <jvmArg>-Xmx1024m</jvmArg>
+                    </jvmArgs>
+                    <!-- Verbose output -->
+                    <verbose>true</verbose>
+                </configuration>
+                <dependencies>
+                    <!-- JUnit 5 support for Pitest -->
+                    <dependency>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-junit5-plugin</artifactId>
+                        <version>1.2.1</version>
+                    </dependency>
+                </dependencies>
             </plugin>
         </plugins>
     </build>
