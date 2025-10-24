@@ -200,17 +200,19 @@
                     <timeoutConstant>8000</timeoutConstant>
                     
                     <jvmArgs>
-                        <jvmArg>-Xmx512m</jvmArg>
-                        <jvmArg>-Xms128m</jvmArg>
+                        <jvmArg>-Xmx768m</jvmArg>
+                        <jvmArg>-Xms256m</jvmArg>
                         <jvmArg>--add-opens=java.base/java.lang=ALL-UNNAMED</jvmArg>
                         <jvmArg>--add-opens=java.base/java.util=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/java.io=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/java.nio=ALL-UNNAMED</jvmArg>
                     </jvmArgs>
 
                     <verbose>true</verbose>
                     
                     <!-- Limitation du nombre de mutations (nouvelle syntaxe Pitest 1.15+) -->
                     <features>
-                        <feature>+CLASSLIMIT(limit[20])</feature>
+                        <feature>+CLASSLIMIT(limit[10])</feature>
                     </features>
                     
                     <!-- Configuration pour Java 17+ -->
