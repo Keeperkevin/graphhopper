@@ -173,16 +173,16 @@
                 <configuration>
                     <!-- Configuration pour tests rapides - seulement classes spécifiques -->
                     <targetClasses>
-                        <param>com.graphhopper.util.shapes.Circle</param>
-                        <!-- Ajouter d'autres classes une par une selon besoin -->
-                        <!-- <param>com.graphhopper.util.DistanceCalcEuclidean</param> -->
+                        <param>com.graphhopper.util.DistanceCalcEuclidean</param>
+                        <!-- Classe simple avec calculs mathématiques seulement -->
+                        <!-- <param>com.graphhopper.util.shapes.Circle</param> -->
                         <!-- <param>com.graphhopper.reader.dem.HeightTile</param> -->
                     </targetClasses>
                     
                     <targetTests>
-                        <param>com.graphhopper.util.shapes.CircleTest</param>
+                        <param>com.graphhopper.util.DistanceCalcEuclideanTest</param>
                         <!-- Tests correspondants -->
-                        <!-- <param>com.graphhopper.util.DistanceCalcEuclideanTest</param> -->
+                        <!-- <param>com.graphhopper.util.shapes.CircleTest</param> -->
                         <!-- <param>com.graphhopper.reader.dem.HeightTileTest</param> -->
                     </targetTests>
 
@@ -200,20 +200,10 @@
                     <timeoutConstant>8000</timeoutConstant>
                     
                     <jvmArgs>
-                        <jvmArg>-Xmx1024m</jvmArg>
-                        <jvmArg>-Xms256m</jvmArg>
+                        <jvmArg>-Xmx512m</jvmArg>
+                        <jvmArg>-Xms128m</jvmArg>
                         <jvmArg>--add-opens=java.base/java.lang=ALL-UNNAMED</jvmArg>
                         <jvmArg>--add-opens=java.base/java.util=ALL-UNNAMED</jvmArg>
-                        <jvmArg>--add-opens=java.base/java.io=ALL-UNNAMED</jvmArg>
-                        <jvmArg>--add-opens=java.base/java.net=ALL-UNNAMED</jvmArg>
-                        <jvmArg>--add-opens=java.base/java.nio=ALL-UNNAMED</jvmArg>
-                        <jvmArg>--add-opens=java.base/java.security=ALL-UNNAMED</jvmArg>
-                        <jvmArg>--add-opens=java.base/java.text=ALL-UNNAMED</jvmArg>
-                        <jvmArg>--add-opens=java.base/sun.nio.ch=ALL-UNNAMED</jvmArg>
-                        <jvmArg>--add-opens=java.base/sun.security.util=ALL-UNNAMED</jvmArg>
-                        <jvmArg>--enable-native-access=ALL-UNNAMED</jvmArg>
-                        <jvmArg>-XX:+UseG1GC</jvmArg>
-                        <jvmArg>-XX:MaxGCPauseMillis=100</jvmArg>
                     </jvmArgs>
 
                     <verbose>true</verbose>
